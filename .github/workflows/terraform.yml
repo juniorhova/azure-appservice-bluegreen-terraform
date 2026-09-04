@@ -1,0 +1,12 @@
+name: Terraform
+
+on:
+  workflow_dispatch:
+
+jobs:
+  placeholder:
+    name: Placeholder
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain status
+        run: echo "Terraform workflow placeholder. Implementation pending."
