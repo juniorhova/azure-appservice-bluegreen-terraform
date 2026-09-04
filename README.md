@@ -1,9 +1,9 @@
 # Azure App Service Blue-Green Deployment with Terraform
 
-Reference implementation scaffold for a production-minded Azure App Service
-blue-green deployment using Terraform, deployment slots, Managed Identity,
-Azure Key Vault, Application Insights, GitHub Actions, and remote Terraform
-state in Azure Storage.
+Reference implementation for a production-minded Azure App Service blue-green
+deployment using Terraform, deployment slots, Managed Identity, Azure Key
+Vault, Application Insights, GitHub Actions, and remote Terraform state in
+Azure Storage.
 
 This repository is intended for public portfolio use. It uses placeholders and
 does not contain real credentials, tenant IDs, subscription IDs, state files, or
@@ -11,8 +11,9 @@ customer-specific values.
 
 ## Project Status
 
-Scaffold only. Terraform resources and application code are intentionally not
-implemented yet.
+Terraform modules and the development environment root module are implemented.
+The sample application is intentionally minimal and exists only to demonstrate
+deployment, health checks, slot validation, and rollback.
 
 ## Target Architecture
 
@@ -51,7 +52,13 @@ GitHub Actions
 │       ├── rollback.yml
 │       └── terraform.yml
 ├── app/
-│   └── README.md
+│   ├── README.md
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── src/
+│   │   └── server.js
+│   └── test/
+│       └── health.test.js
 ├── docs/
 │   ├── architecture.md
 │   ├── deployment-flow.md
@@ -88,11 +95,13 @@ staging slot, run smoke tests, and swap slots after validation.
 `.github/workflows/rollback.yml` will provide a manual rollback workflow that
 swaps the previous production version back into place.
 
-`app/` will contain the small sample web application used to demonstrate the
+`app/` contains the small Node.js sample web application used to demonstrate the
 deployment flow.
 
-`app/README.md` explains the intended application responsibilities before code
-is added.
+`app/src/server.js` exposes `/` and `/health`, displays the application version,
+and reads an optional `APP_MESSAGE` environment variable.
+
+`app/test/health.test.js` verifies that `/health` returns a healthy response.
 
 `docs/` contains project documentation for architecture, deployment, rollback,
 and security decisions.
@@ -112,8 +121,8 @@ management, and Terraform state handling.
 
 `infra/README.md` explains the infrastructure layout and implementation order.
 
-`infra/modules/` is reserved for reusable Terraform modules. It is intentionally
-empty except for documentation at this stage.
+`infra/modules/` contains reusable Terraform modules for Resource Group, App
+Service, Key Vault, and monitoring resources.
 
 `infra/modules/README.md` describes the intended module boundaries.
 
@@ -125,14 +134,14 @@ AzureRM remote backend. Backend values are supplied separately.
 `infra/environments/dev/backend.example.hcl` provides placeholder backend
 configuration for Azure Storage remote state.
 
-`infra/environments/dev/main.tf` is the future entry point for composing
-Terraform modules.
+`infra/environments/dev/main.tf` composes the Terraform modules for the
+development environment.
 
-`infra/environments/dev/variables.tf` is reserved for environment input
+`infra/environments/dev/variables.tf` defines validated environment input
 variables.
 
-`infra/environments/dev/outputs.tf` is reserved for environment outputs such as
-App Service URLs.
+`infra/environments/dev/outputs.tf` publishes environment outputs such as App
+Service URLs.
 
 `infra/environments/dev/terraform.tfvars.example` shows safe placeholder values
 for local testing.
@@ -162,7 +171,15 @@ YOUR_TENANT_ID
 example.com
 ```
 
+## Application Tests
+
+```bash
+cd app
+npm test
+```
+
 ## Next Implementation Step
 
-The next step is to define the Terraform module boundaries and development
-environment variables before implementing any Azure resources.
+The next step is to wire the deployment workflow so it builds the sample
+application, deploys to the staging slot, runs smoke tests against `/health`,
+and performs the slot swap only after validation passes.

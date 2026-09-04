@@ -1,13 +1,47 @@
 # Sample Application
 
-This directory will contain a very small web application used to demonstrate
-blue-green deployment to Azure App Service.
+Minimal Node.js web application used to demonstrate blue-green deployment to
+Azure App Service.
 
-Expected future behavior:
+The application intentionally avoids framework dependencies so the repository
+stays focused on infrastructure, deployment slots, smoke tests, and rollback.
 
-- A root endpoint for a simple application response.
-- A `/health` endpoint for staging and production smoke tests.
-- Minimal dependencies so the infrastructure and deployment pattern remain the
-  focus of the repository.
+## Endpoints
 
-No application code is implemented yet.
+- `/` returns a small HTML page with the application version and optional
+  environment-specific message.
+- `/health` returns a JSON health response for App Service health checks and
+  deployment smoke tests.
+
+## Configuration
+
+`APP_MESSAGE` is optional. When set, the root page displays its value. This is
+useful for demonstrating slot-specific app settings without introducing
+application complexity.
+
+## Local Development
+
+```bash
+npm install
+npm start
+```
+
+Then open:
+
+```text
+http://localhost:3000/
+http://localhost:3000/health
+```
+
+Run tests:
+
+```bash
+npm test
+```
+
+## Docker
+
+No Dockerfile is included. Azure App Service can run this Node.js application
+directly from the source package, and adding a container image would add
+registry and image lifecycle concerns that are not needed for this portfolio
+scenario.

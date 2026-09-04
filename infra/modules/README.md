@@ -1,14 +1,17 @@
 # Terraform Modules
 
-Reusable Terraform modules will be added here after the environment contract is
-defined.
+Reusable Terraform modules for the Azure App Service blue-green reference
+architecture.
 
-Expected future modules:
+## Modules
 
-- `app-service`: App Service Plan, Linux Web App, deployment slot, and managed
+- `resource-group`: Resource Group boundary for the reference environment.
+- `app-service`: App Service Plan, Linux Web App, staging slot, and managed
   identity configuration.
-- `key-vault`: Key Vault, access model, and sample secret references.
-- `monitoring`: Log Analytics Workspace, Application Insights, and optional
-  alerts.
+- `key-vault`: Key Vault configuration and access for App Service managed
+  identities.
+- `monitoring`: Log Analytics Workspace and Application Insights.
 
-This directory intentionally contains no resource implementations yet.
+Each module keeps provider configuration out of the module boundary so root
+modules can control authentication, backend configuration, and environment-level
+settings.

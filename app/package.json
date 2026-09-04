@@ -1,0 +1,13 @@
+{
+  "name": "azure-appservice-bluegreen-sample-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal Node.js sample app for Azure App Service blue-green deployment.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  }
+}

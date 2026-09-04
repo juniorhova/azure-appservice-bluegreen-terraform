@@ -4,8 +4,8 @@ Terraform root module for the development environment.
 
 ## Purpose
 
-This environment will compose reusable modules from `infra/modules/` to deploy
-the portfolio reference architecture into Azure.
+This environment composes reusable modules from `infra/modules/` to deploy the
+portfolio reference architecture into Azure.
 
 ## Files
 
@@ -15,16 +15,18 @@ the portfolio reference architecture into Azure.
 `backend.example.hcl` contains public-safe placeholder values for Azure Storage
 remote state.
 
-`main.tf` is the future module composition entry point.
+`main.tf` composes the Resource Group, monitoring, App Service, and Key Vault
+modules.
 
-`variables.tf` is reserved for environment input variables.
+`variables.tf` defines validated environment input variables.
 
-`outputs.tf` is reserved for environment outputs such as application URLs,
-resource names, and smoke-test endpoints.
+`outputs.tf` publishes environment outputs such as application URLs, resource
+names, and smoke-test endpoints.
 
 `terraform.tfvars.example` shows placeholder variable values. Do not commit
 real `terraform.tfvars` files.
 
 ## Status
 
-Scaffold only. No Azure resources are implemented yet.
+Development environment composition is implemented. Deployment still requires
+safe backend configuration and caller-supplied Azure credentials.
