@@ -1,0 +1,12 @@
+name: Rollback
+
+on:
+  workflow_dispatch:
+
+jobs:
+  placeholder:
+    name: Placeholder
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain status
+        run: echo "Rollback workflow placeholder. Implementation pending."
