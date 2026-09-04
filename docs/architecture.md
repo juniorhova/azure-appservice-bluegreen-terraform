@@ -17,5 +17,6 @@ Terraform and GitHub Actions.
 
 ## Current Status
 
-Architecture documentation scaffold only. Resource implementation will be added
-in later steps.
+Terraform resource implementation, sample application code, and split
+infrastructure/application GitHub Actions workflows are implemented for the
+development reference environment.

@@ -1,7 +1,7 @@
 # Infrastructure
 
 Terraform code for the Azure App Service blue-green deployment reference
-implementation will live here.
+implementation.
 
 ## Layout
 
@@ -18,8 +18,8 @@ infra/
 owns provider configuration, backend configuration, environment-specific
 variables, and module composition.
 
-`modules/` contains reusable Terraform modules. Future modules are expected to
-cover App Service, Key Vault, monitoring, and supporting Azure resources.
+`modules/` contains reusable Terraform modules for App Service, Key Vault,
+monitoring, Resource Group, and supporting Azure resources.
 
 ## Current Status
 

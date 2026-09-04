@@ -3,10 +3,48 @@ name: Rollback
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+env:
+  STAGING_SLOT_NAME: staging
+
 jobs:
-  placeholder:
-    name: Placeholder
+  rollback:
+    name: Swap previous production back
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for GitHub OIDC federation to Azure. Rollback does not use stored Azure credentials.
+    environment:
+      name: azure-dev-app
+
     steps:
-      - name: Explain status
-        run: echo "Rollback workflow placeholder. Implementation pending."
+      - name: Azure login with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Swap slots back
+        run: |
+          az webapp deployment slot swap \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP_NAME }}" \
+            --name "${{ vars.AZURE_WEBAPP_NAME }}" \
+            --slot "$STAGING_SLOT_NAME" \
+            --target-slot production
+
+      - name: Verify production health
+        run: |
+          curl --fail --silent --show-error "${{ vars.AZURE_PRODUCTION_URL }}/health"
+
+      - name: Rollback summary
+        if: always()
+        run: |
+          {
+            echo "## Rollback"
+            echo ""
+            echo "- Web app: \`${{ vars.AZURE_WEBAPP_NAME }}\`"
+            echo "- Restored by swapping \`${{ env.STAGING_SLOT_NAME }}\` back into production."
+            echo "- Production URL: ${{ vars.AZURE_PRODUCTION_URL }}"
+          } >> "$GITHUB_STEP_SUMMARY"

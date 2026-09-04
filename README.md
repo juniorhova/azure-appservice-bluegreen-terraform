@@ -13,7 +13,8 @@ customer-specific values.
 
 Terraform modules and the development environment root module are implemented.
 The sample application is intentionally minimal and exists only to demonstrate
-deployment, health checks, slot validation, and rollback.
+deployment, health checks, slot validation, and rollback. GitHub Actions
+workflows are split between infrastructure delivery and application delivery.
 
 ## Target Architecture
 
@@ -86,14 +87,16 @@ GitHub Actions
 
 `.github/workflows/` contains GitHub Actions workflow definitions.
 
-`.github/workflows/terraform.yml` will validate, plan, and eventually apply the
-Terraform configuration.
+`.github/workflows/terraform.yml` validates, plans, and applies Terraform
+changes for `infra/**` updates. Apply runs only after the `azure-dev-infra`
+protected environment approval gate.
 
-`.github/workflows/deploy.yml` will build the sample app, deploy it to the
-staging slot, run smoke tests, and swap slots after validation.
+`.github/workflows/deploy.yml` tests the sample app, deploys it to the staging
+slot for `app/**` updates, runs `/health` smoke tests, and swaps slots after
+validation.
 
-`.github/workflows/rollback.yml` will provide a manual rollback workflow that
-swaps the previous production version back into place.
+`.github/workflows/rollback.yml` provides a manual rollback workflow that swaps
+the previous production version back into place.
 
 `app/` contains the small Node.js sample web application used to demonstrate the
 deployment flow.
@@ -180,6 +183,6 @@ npm test
 
 ## Next Implementation Step
 
-The next step is to wire the deployment workflow so it builds the sample
-application, deploys to the staging slot, runs smoke tests against `/health`,
-and performs the slot swap only after validation passes.
+The next step is to configure GitHub OIDC federation, repository variables, and
+protected environments in GitHub and Azure so the workflows can deploy to the
+development App Service environment.

@@ -1,12 +1,141 @@
-name: Terraform
+name: Infrastructure
 
 on:
+  pull_request:
+    branches-ignore:
+      - "docs/**"
+    paths:
+      - "infra/**"
+      - ".github/workflows/terraform.yml"
+  push:
+    branches-ignore:
+      - "docs/**"
+    paths:
+      - "infra/**"
+      - ".github/workflows/terraform.yml"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+env:
+  TF_WORKING_DIR: infra/environments/dev
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TF_VAR_subscription_id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
 jobs:
-  placeholder:
-    name: Placeholder
+  plan:
+    name: Validate and plan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for GitHub OIDC federation to Azure. No client secret is stored in GitHub.
+
     steps:
-      - name: Explain status
-        run: echo "Terraform workflow placeholder. Implementation pending."
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform fmt check
+        run: terraform fmt -check -recursive infra
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ vars.TF_STATE_RESOURCE_GROUP_NAME }}" \
+            -backend-config="storage_account_name=${{ vars.TF_STATE_STORAGE_ACCOUNT_NAME }}" \
+            -backend-config="container_name=${{ vars.TF_STATE_CONTAINER_NAME }}" \
+            -backend-config="key=${{ vars.TF_STATE_KEY }}"
+
+      - name: Terraform validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
+
+      - name: Terraform plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -out=tfplan
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          {
+            echo "## Infrastructure plan"
+            echo ""
+            echo "- Event: \`${{ github.event_name }}\`"
+            echo "- Ref: \`${{ github.ref_name }}\`"
+            echo "- Terraform root: \`${{ env.TF_WORKING_DIR }}\`"
+            echo "- Backend key: \`${{ vars.TF_STATE_KEY }}\`"
+            echo ""
+            echo "Terraform plan files are not uploaded as artifacts because they can contain sensitive values."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  apply:
+    name: Apply infrastructure
+    runs-on: ubuntu-latest
+    needs: plan
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    permissions:
+      contents: read
+      id-token: write # Required for GitHub OIDC federation to Azure. No client secret is stored in GitHub.
+    environment:
+      name: azure-dev-infra
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ vars.TF_STATE_RESOURCE_GROUP_NAME }}" \
+            -backend-config="storage_account_name=${{ vars.TF_STATE_STORAGE_ACCOUNT_NAME }}" \
+            -backend-config="container_name=${{ vars.TF_STATE_CONTAINER_NAME }}" \
+            -backend-config="key=${{ vars.TF_STATE_KEY }}"
+
+      - name: Terraform apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -auto-approve
+
+      - name: Read Terraform outputs
+        id: tf_outputs
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "resource_group_name=$(terraform output -raw resource_group_name)" >> "$GITHUB_OUTPUT"
+          echo "web_app_name=$(terraform output -raw web_app_name)" >> "$GITHUB_OUTPUT"
+          echo "staging_slot_url=$(terraform output -raw staging_slot_url)" >> "$GITHUB_OUTPUT"
+          echo "web_app_url=$(terraform output -raw web_app_url)" >> "$GITHUB_OUTPUT"
+
+      - name: Deployment summary
+        run: |
+          {
+            echo "## Infrastructure deployment"
+            echo ""
+            echo "- Resource group: \`${{ steps.tf_outputs.outputs.resource_group_name }}\`"
+            echo "- Web app: \`${{ steps.tf_outputs.outputs.web_app_name }}\`"
+            echo "- Staging URL: ${{ steps.tf_outputs.outputs.staging_slot_url }}"
+            echo "- Production URL: ${{ steps.tf_outputs.outputs.web_app_url }}"
+            echo ""
+            echo "Apply ran only after the \`azure-dev-infra\` protected environment gate approved this job."
+          } >> "$GITHUB_STEP_SUMMARY"
