@@ -31,6 +31,8 @@ jobs:
     permissions:
       contents: read
       id-token: write # Required for GitHub OIDC federation to Azure. No client secret is stored in GitHub.
+    environment:
+      name: azure-dev-infra
 
     steps:
       - name: Checkout
